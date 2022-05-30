@@ -1,8 +1,10 @@
 # 'Follina' Microsoft Office RCE
 
-Quick POC to replicate the 'Follina' Office RCE vulnerability for local testing purposes. Running the script will generate the `clickme.docx` payload file in your current working directory, and start a web server with the payload file (`www/exploit.html`). Will run on localhost by default, modify parameters in `follina.py` as needed.
+Quick POC to replicate the 'Follina' Office RCE vulnerability for local testing purposes. Running the script will generate the `clickme.docx` payload file in your current working directory, and start a web server with the payload file (`www/exploit.html`). The web server listens on all interfaces by default, but the payload file will point towards your local host for retrieving it. Modify parameters in `follina.py` as needed.
 
-As far as I'm aware the file that is executed needs to end in `.exe`, but you can load it from a remote file share to farm some hashes if you want.
+As far as I'm aware the file that is executed needs to end in `.exe`, but you can load it from a remote file share to farm some hashes if you want. Alternatively, you can adapt the payload to run encoded powershell as observed in the original payloads, described by Kevin Beaumont in the blog linked below.
+
+Usage: `python3 ./follina.py`
 
 > ⚠ DO NOT USE IN PRODUCTION LEST YOU BE REGARDED A DUMMY
 
