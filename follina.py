@@ -25,7 +25,8 @@ with open("src/document.xml.rels.tpl", "r") as f:
 
 payload_rels = tmp.format(payload_url = payload_url)
 
-os.makedirs("src/clickme/word/_rels")
+if not os.path.exists("src/clickme/word/_rels"):
+    os.makedirs("src/clickme/word/_rels")
 
 with open("src/clickme/word/_rels/document.xml.rels", "w") as f:
     f.write(payload_rels)
