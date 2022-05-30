@@ -6,4 +6,4 @@ As far as I'm aware the file that is executed needs to end in `.exe`, but you ca
 
 > ⚠ DO NOT USE IN PRODUCTION LEST YOU BE REGARDED A DUMMY
 
-Thanks to [@KevTheHermit](https://twitter.com/KevTheHermit) for sharing their poc, and [John Hammond](https://twitter.com/_JohnHammond) for their further work on analysing payload requirements. Additional thanks to [@theluemmel](https://twitter.com/theluemmel) for sharing their payload with me.
+Thanks to [Kevin Beaumont](https://twitter.com/GossiTheDog) for [his original analysis](https://doublepulsar.com/follina-a-microsoft-office-code-execution-vulnerability-1a47fce5629e) of the issue, [@KevTheHermit](https://twitter.com/KevTheHermit) for sharing their poc, and [John Hammond](https://twitter.com/_JohnHammond) for their further work on analysing payload requirements. Additional thanks to [@theluemmel](https://twitter.com/theluemmel) for sharing their version of the payload with me.
