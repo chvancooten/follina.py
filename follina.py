@@ -43,7 +43,7 @@ def generate_docx(payload_url):
 def generate_rtf(payload_url):
     const_rtf_name = "clickme.rtf"
 
-    with open("src/rtf/clickme.rtf.tpl", "r") as f:
+    with open("src/rtf/clickme.rtf", "r") as f:
         tmp = f.read()
 
     payload_rtf = tmp.replace('{payload_url}', payload_url) # cannot use format due to {} characters in RTF
