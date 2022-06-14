@@ -76,16 +76,6 @@ def generate_rtf(payload_url):
 
     return const_rtf_name
 
-def start_http(host, port):
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory="www", **kwargs)
-
-    print(f"Serving payload on {payload_url}")
-
-    with socketserver.TCPServer((host, port), Handler) as httpd:
-        httpd.handle_request()
-
 if __name__ == "__main__":
     
     # Parse arguments
